@@ -1,4 +1,4 @@
-from typing import *
+from typing import List, Set
 
 PRINT_PROCESS = False
 
@@ -10,17 +10,19 @@ class Sudoku:
 
         # Whether each grid on the board can be modified. 
         # Grids that are initial provided in the problem are NOT modifiable.
-        self.modifiable = []
+        self.modifiable:List[List[bool]] = []
 
         # Stores the current soduku board in an integer array, 0 represents blank
-        self.board = []
+        self.board:List[List[int]] = []
 
-        self.cursor_x = self.cursor_y = 0
+        self.cursor_x:int = 0
+        self.cursor_y:int = 0
 
-        self.modified_stack = []
+        self.modified_stack:List[List[int]] = []
 
         for i in range(9):
-            self.modifiable.append([])
+            _:List[bool] = []
+            self.modifiable.append(_)
             self.board.append([])
             for j in range(9):
                 grid_val = initial_board[i][j]
@@ -29,33 +31,6 @@ class Sudoku:
                     self.board[i].append(0)
                 else:
                     self.board[i].append(int(grid_val))
-    
-    def validate(self, position_x:int, position_y:int) -> bool:
-        '''
-        Validates a grid.
-        Retunrs: True if the grid is legal, False otherwise
-        '''
-        val = self.board[position_x][position_y]
-
-        self.board[position_x][position_y] = 0 # mark as None to avoid self-counting
-        # Check horizontal / vertical line:
-        flag = True
-        for i in range(9):
-            if self.board[i][position_y] == val:
-                flag = False
-            if self.board[position_x][i] == val:
-                flag = False
-        
-        # Check Small 3x3 Grid
-        initial_x = int(position_x / 3) * 3
-        initial_y = int(position_y / 3) * 3
-        for i in range(3):
-            for j in range(3):
-                if self.board[initial_x + i][initial_y + j] == val:
-                    flag = False
-            
-        self.board[position_x][position_y] = val
-        return flag
     
     def next_grid(self) -> bool:
         '''
@@ -81,23 +56,46 @@ class Sudoku:
             self.cursor_x, self.cursor_y = self.modified_stack.pop()
             return True
         return False
+    
+    def modify(self) -> bool:
+        '''
+        Attempts to increase 
+        If it is impossible to increase, returns false
+        '''
+        eliminates:Set[int] = set()
+
+        # Elinates all exisitng values on the horizontal and vertical line
+        for i in range(9):
+            eliminates.add(self.board[i][self.cursor_y])
+            eliminates.add(self.board[self.cursor_x][i])
+        
+        # Elinates all exisitng values in the small 3x3 grid
+        initial_x = int(self.cursor_x / 3) * 3
+        initial_y = int(self.cursor_y / 3) * 3
+        for i in range(3):
+            for j in range(3):
+                eliminates.add(self.board[initial_x + i][initial_y + j])
+        
+        for i in range(self.board[self.cursor_x][self.cursor_y] + 1, 10):
+            if i not in eliminates:
+                self.board[self.cursor_x][self.cursor_y] = i
+                return True
+        return False
 
     def iterate(self) -> bool:
         '''
-        Make an attempt to move to fill in the current grid and move to the next grid.
+        Make an attempt to fill in the current grid and move to the next grid.
         If it is impossible to fill the current grid, trace back to the previous grid.
         Returns False if the last modifiable grid is filled, marking the puzzle as complete; Returns True otherwise.
         '''
 
-        # Increase (Create) the block value until 9
-        for _ in range(9 - self.board[self.cursor_x][self.cursor_y]):
-            self.board[self.cursor_x][self.cursor_y] += 1
-            # If the attempt works, move to the next grid
-            if self.validate(self.cursor_x, self.cursor_y):
-                self.modified_stack.append((self.cursor_x, self.cursor_y))
-                return self.next_grid()
+        # Attempts to modify the current grid
+        if self.modify():
+            # If success, move to the next grid
+            self.modified_stack.append([self.cursor_x, self.cursor_y])
+            return self.next_grid()
         
-        # If all the attempts fails, trace back
+        # If it is impossible to modify the current grid, we trace back to the previously modified grid 
         x, y = self.cursor_x, self.cursor_y
         if not self.previous_grid():
             raise RuntimeError(f"Cannot TraceBack from {x}, {y}.")

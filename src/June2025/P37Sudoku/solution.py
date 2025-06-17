@@ -1,36 +1,29 @@
 from typing import *
 
+PRINT_PROCESS = True
+
 class Sudoku:
-    '''
-    Whether each grid on the board can be modified.
-    Grids that are initial provided in the problem are NOT modifiable.
-    '''
-    modifiable = []
-    '''
-    The current sudoku board.
-    '''
-    board = []
-
-    '''
-    Stack that contains the modification history
-    Each item is in [x,y] format
-    '''
-    modify_stack = []
-
-    cursor_x = 0
-    cursor_y = 0
-
     def __init__(self, initial_board:List[List[str]]):
         '''
         Creates a new Sudoku puzzle
         '''
+
+        # Whether each grid on the board can be modified. 
+        # Grids that are initial provided in the problem are NOT modifiable.
+        self.modifiable = []
+
+        # Stores the current soduku board in an integer array, 0 represents blank
+        self.board = []
+
+        self.cursor_x = self.cursor_y = 0
+
         for i in range(9):
             self.modifiable.append([])
             self.board.append([])
             for j in range(9):
                 grid_val = initial_board[i][j]
                 self.modifiable[i].append(grid_val == '.')
-                if (grid_val) == '.':
+                if grid_val == '.':
                     self.board[i].append(0)
                 else:
                     self.board[i].append(int(grid_val))
@@ -108,8 +101,9 @@ class Sudoku:
         # If the current value is greater than 9
         if self.board[self.cursor_x][self.cursor_y] > 9:
             self.board[self.cursor_x][self.cursor_y] = 0
+            x, y = self.cursor_x, self.cursor_y
             if not self.previous_grid():
-                raise RuntimeError(f"Cannot TraceBack from {self.cursor_x}, {self.cursor_y}.")
+                raise RuntimeError(f"Cannot TraceBack from {x}, {y}.")
             return True
         # If the attempt successeded
         if self.validate(self.cursor_x, self.cursor_y):
@@ -120,7 +114,8 @@ class Sudoku:
         if not self.modifiable[self.cursor_x][self.cursor_y]:
             self.next_grid()
         while self.iterate():
-            pass
+            if PRINT_PROCESS:
+                print(f"\rWorking on: ({self.cursor_x}, {self.cursor_y})", end="", flush=True)
     
     def print(self):
         for i in self.board:
@@ -141,9 +136,9 @@ class Solution:
         sudoku.output(board)
         sudoku.print()
 
+
 if __name__ == '__main__':
-    s = Solution()
-    s.solveSudoku([
+    board = [
         ["5","3",".",".","7",".",".",".","."],
         ["6",".",".","1","9","5",".",".","."],
         [".","9","8",".",".",".",".","6","."],
@@ -152,5 +147,8 @@ if __name__ == '__main__':
         ["7",".",".",".","2",".",".",".","6"],
         [".","6",".",".",".",".","2","8","."],
         [".",".",".","4","1","9",".",".","5"],
-        [".",".",".",".","8",".",".","7","9"]])
+        [".",".",".",".","8",".",".","7","9"]]
+    board = [[".",".",".",".",".",".",".",".","."],[".","9",".",".","1",".",".","3","."],[".",".","6",".","2",".","7",".","."],[".",".",".","3",".","4",".",".","."],["2","1",".",".",".",".",".","9","8"],[".",".",".",".",".",".",".",".","."],[".",".","2","5",".","6","4",".","."],[".","8",".",".",".",".",".","1","."],[".",".",".",".",".",".",".",".","."]]
+    Solution().solveSudoku(board)
+    print(board)
     

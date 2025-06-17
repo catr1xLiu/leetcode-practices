@@ -1,6 +1,6 @@
 from typing import *
 
-PRINT_PROCESS = True
+PRINT_PROCESS = False
 
 class Sudoku:
     def __init__(self, initial_board:List[List[str]]):
@@ -16,6 +16,8 @@ class Sudoku:
         self.board = []
 
         self.cursor_x = self.cursor_y = 0
+
+        self.modified_stack = []
 
         for i in range(9):
             self.modifiable.append([])
@@ -60,34 +62,25 @@ class Sudoku:
         Move the cursor to the next modifiable grid
         Returns: False if the current grid is the last, True otherwise
         '''
-        if self.cursor_x == self.cursor_y == 8:
-            return False
-        self.cursor_x += 1
-        if self.cursor_x >= 9:
-            self.cursor_x = 0
-            self.cursor_y += 1
-        
-        if self.modifiable[self.cursor_x][self.cursor_y]:
-            return True
-        
-        return self.next_grid()
 
+        while True:
+            self.cursor_x += 1
+            if self.cursor_x >= 9:
+                self.cursor_x = 0
+                self.cursor_y += 1
+            if self.cursor_y >= 9:
+                break
+            if self.modifiable[self.cursor_x][self.cursor_y]:
+                return True
+        
+        return False
+    
     def previous_grid(self) -> bool:
-        '''
-        Move the cursor to the previous modifiable grid
-        Returns: False if the current grid is the last, True otherwise
-        '''
-        if self.cursor_x == self.cursor_y == 0:
-            return False
-        self.cursor_x -= 1
-        if self.cursor_x < 0:
-            self.cursor_x = 8
-            self.cursor_y -= 1
-        
-        if self.modifiable[self.cursor_x][self.cursor_y]:
+        self.board[self.cursor_x][self.cursor_y] = 0
+        if self.modified_stack:
+            self.cursor_x, self.cursor_y = self.modified_stack.pop()
             return True
-        
-        return self.previous_grid()
+        return False
 
     def iterate(self) -> bool:
         '''
@@ -95,19 +88,19 @@ class Sudoku:
         If it is impossible to fill the current grid, trace back to the previous grid.
         Returns False if the last modifiable grid is filled, marking the puzzle as complete; Returns True otherwise.
         '''
-        # Increase (Create) the block value
-        self.board[self.cursor_x][self.cursor_y] += 1
 
-        # If the current value is greater than 9
-        if self.board[self.cursor_x][self.cursor_y] > 9:
-            self.board[self.cursor_x][self.cursor_y] = 0
-            x, y = self.cursor_x, self.cursor_y
-            if not self.previous_grid():
-                raise RuntimeError(f"Cannot TraceBack from {x}, {y}.")
-            return True
-        # If the attempt successeded
-        if self.validate(self.cursor_x, self.cursor_y):
-            return self.next_grid()
+        # Increase (Create) the block value until 9
+        for _ in range(9 - self.board[self.cursor_x][self.cursor_y]):
+            self.board[self.cursor_x][self.cursor_y] += 1
+            # If the attempt works, move to the next grid
+            if self.validate(self.cursor_x, self.cursor_y):
+                self.modified_stack.append((self.cursor_x, self.cursor_y))
+                return self.next_grid()
+        
+        # If all the attempts fails, trace back
+        x, y = self.cursor_x, self.cursor_y
+        if not self.previous_grid():
+            raise RuntimeError(f"Cannot TraceBack from {x}, {y}.")
         return True
 
     def solve(self):
@@ -118,9 +111,9 @@ class Sudoku:
                 print(f"\rWorking on: ({self.cursor_x}, {self.cursor_y})", end="", flush=True)
     
     def print(self):
+        print()
         for i in self.board:
             print(i)
-        print()
 
     def output(self, target:List[List[str]]):
         for i in range(9):

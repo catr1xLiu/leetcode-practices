@@ -1,4 +1,5 @@
-from typing import List, Set
+import time
+from typing import Any, Callable, List, Set
 
 PRINT_PROCESS = False
 
@@ -118,9 +119,18 @@ class Sudoku:
             for j in range(9):
                 target[i][j] = str(self.board[i][j])
                 target[i][j] = target[i][j].replace("0", ".")
-        
+
+def with_timer(func:Callable[..., Any]):
+    def wrapper(*args:Any, **kwargs:Any):
+        start = time.perf_counter()
+        ret = func(*args, **kwargs)
+        end = time.perf_counter()
+        print(f"time used: {(end-start)} seconds")
+        return ret
+    return wrapper
 
 class Solution:
+    @with_timer
     def solveSudoku(self, board: List[List[str]]) -> None:
         sudoku = Sudoku(board)
         sudoku.solve()

@@ -1,4 +1,4 @@
-def removeIfExist(s:str, k:int) -> str:
+def remove_if_exist(s:str, k:int) -> str:
     start:int = 0
 
     for i in range(len(s)):
@@ -7,16 +7,19 @@ def removeIfExist(s:str, k:int) -> str:
         faulty_bracket_2 = current_length > k and s[i] == '('
         if faulty_bracket_1 or faulty_bracket_2:
             start=i
-            break
+            continue
         if current_length == k*2:
-            return s[:start] + s[i:]
-
+            return s[:start] + s[i+1:]
+    return s
 
 class Solution:
     def removeSubstring(self, s: str, k: int) -> str:
         while len(s) >= k*2:
-            new_s = removeIfExist(s, k)
+            new_s = remove_if_exist(s, k)
             if new_s == s:
-                return new_s 
+                break
             s = new_s
-    
+        return s
+
+if __name__ == '__main__':
+    print(remove_if_exist("()()()((()))", 3))
